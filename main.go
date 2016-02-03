@@ -1,13 +1,22 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
+	"regexp"
 )
 
-func handle(data []byte) {
-	fmt.Println("Received ", string(data))
+func handle(data []byte) map[string]string {
+	r := regexp.MustCompile(`galeb\.(?P<addr>[\w-_]+)\..*.requestTime:(?P<value>\d+)|ms.*`)
+	d := r.FindStringSubmatch(string(data))
+	document := map[string]string{
+		"client": "tsuru",
+		"metric": "response_time",
+		"count":  "1",
+		"app":    d[1],
+		"value":  d[2],
+	}
+	return document
 }
 
 func main() {
