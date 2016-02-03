@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net"
 	"regexp"
@@ -13,6 +14,24 @@ type document struct {
 	Count  int    `json:"count"`
 	App    string `json:"app"`
 	Value  int    `json:"value"`
+}
+
+func sendDocument(doc *document) error {
+	addr, err := net.ResolveUDPAddr("udp", "endpoint")
+	if err != nil {
+		return err
+	}
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	b, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(b)
+	return err
 }
 
 func handle(data []byte) (*document, error) {
