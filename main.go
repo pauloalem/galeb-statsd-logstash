@@ -80,6 +80,10 @@ func main() {
 		if err != nil {
 			log.Print(err)
 		}
-		handle(buf[0:n])
+		document, err := handle(buf[0:n])
+		err = sendDocument(document)
+		if err != nil {
+			log.Print(err)
+		}
 	}
 }
