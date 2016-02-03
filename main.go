@@ -4,19 +4,32 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"strconv"
 )
 
-func handle(data []byte) map[string]string {
+type document struct {
+	Client string `json:"client"`
+	Metric string `json:"metric"`
+	Count  int    `json:"count"`
+	App    string `json:"app"`
+	Value  int    `json:"value"`
+}
+
+func handle(data []byte) (*document, error) {
 	r := regexp.MustCompile(`galeb\.(?P<addr>[\w-_]+)\..*.requestTime:(?P<value>\d+)|ms.*`)
 	d := r.FindStringSubmatch(string(data))
-	document := map[string]string{
-		"client": "tsuru",
-		"metric": "response_time",
-		"count":  "1",
-		"app":    d[1],
-		"value":  d[2],
+	value, err := strconv.Atoi(d[2])
+	if err != nil {
+		return nil, err
 	}
-	return document
+	doc := &document{
+		Client: "tsuru",
+		Metric: "response_time",
+		Count:  1,
+		App:    d[1],
+		Value:  value,
+	}
+	return doc, nil
 }
 
 func main() {
