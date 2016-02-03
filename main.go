@@ -8,7 +8,10 @@ import (
 	"strconv"
 )
 
-var endpoint string
+var (
+	endpoint string
+	apps     map[string]string
+)
 
 type document struct {
 	Client string `json:"client"`
