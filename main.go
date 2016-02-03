@@ -8,6 +8,8 @@ import (
 	"strconv"
 )
 
+var endpoint string
+
 type document struct {
 	Client string `json:"client"`
 	Metric string `json:"metric"`
@@ -17,7 +19,7 @@ type document struct {
 }
 
 func sendDocument(doc *document) error {
-	addr, err := net.ResolveUDPAddr("udp", "endpoint")
+	addr, err := net.ResolveUDPAddr("udp", endpoint)
 	if err != nil {
 		return err
 	}
