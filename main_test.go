@@ -14,12 +14,14 @@ type S struct{}
 var _ = check.Suite(S{})
 
 func (S) TestHandle(c *check.C) {
+	apps["myapp.cloud.tsuru.com"] = "myapp"
+	defer func() { apps["myapp.cloud.tsuru.com"] = "" }()
 	input := []byte("galeb.myapp_cloud_tsuru_com.10_236_99_181_32772.requestTime:44|ms")
 	expected := &document{
 		Client: "tsuru",
 		Metric: "response_time",
 		Count:  1,
-		App:    "myapp_cloud_tsuru_com",
+		App:    "myapp",
 		Value:  44,
 	}
 	doc, err := handle(input)
@@ -36,15 +38,23 @@ func runServer(c *check.C) {
 }
 
 func (S) TestSendDocument(c *check.C) {
+	apps["myapp.cloud.tsuru.com"] = "myapp"
+	defer func() { apps["myapp.cloud.tsuru.com"] = "" }()
 	runServer(c)
 	doc := &document{
 		Client: "tsuru",
 		Metric: "response_time",
 		Count:  1,
-		App:    "myapp_cloud_tsuru_com",
+		App:    "myapp",
 		Value:  44,
 	}
 	endpoint = ":1984"
 	err := sendDocument(doc)
 	c.Assert(err, check.IsNil)
+}
+
+func (S) TestAppFromAddr(c *check.C) {
+	apps["myapp.com"] = "myapp"
+	defer func() { apps["myapp.com"] = "" }()
+	c.Assert(appFromAddr("myapp.com"), check.Equals, "myapp")
 }

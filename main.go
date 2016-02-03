@@ -6,11 +6,12 @@ import (
 	"net"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var (
 	endpoint string
-	apps     map[string]string
+	apps     map[string]string = map[string]string{}
 )
 
 type document struct {
@@ -39,6 +40,10 @@ func sendDocument(doc *document) error {
 	return err
 }
 
+func appFromAddr(addr string) string {
+	return apps[addr]
+}
+
 func handle(data []byte) (*document, error) {
 	r := regexp.MustCompile(`galeb\.(?P<addr>[\w-_]+)\..*.requestTime:(?P<value>\d+)|ms.*`)
 	d := r.FindStringSubmatch(string(data))
@@ -46,11 +51,14 @@ func handle(data []byte) (*document, error) {
 	if err != nil {
 		return nil, err
 	}
+	addr := d[1]
+	addr = strings.Replace(addr, "_", ".", -1)
+	app := appFromAddr(addr)
 	doc := &document{
 		Client: "tsuru",
 		Metric: "response_time",
 		Count:  1,
-		App:    d[1],
+		App:    app,
 		Value:  value,
 	}
 	return doc, nil
