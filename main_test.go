@@ -58,3 +58,7 @@ func (S) TestAppFromAddr(c *check.C) {
 	defer func() { apps["myapp.com"] = "" }()
 	c.Assert(appFromAddr("myapp.com"), check.Equals, "myapp")
 }
+
+func (S) TestParseAddr(c *check.C) {
+	c.Assert(parseAddr("myapp_com"), check.Equals, "myapp.com")
+}

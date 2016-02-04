@@ -44,6 +44,10 @@ func appFromAddr(addr string) string {
 	return apps[addr]
 }
 
+func parseAddr(addr string) string {
+	return strings.Replace(addr, "_", ".", -1)
+}
+
 func handle(data []byte) (*document, error) {
 	r := regexp.MustCompile(`galeb\.(?P<addr>[\w-_]+)\..*.requestTime:(?P<value>\d+)|ms.*`)
 	d := r.FindStringSubmatch(string(data))
@@ -51,9 +55,7 @@ func handle(data []byte) (*document, error) {
 	if err != nil {
 		return nil, err
 	}
-	addr := d[1]
-	addr = strings.Replace(addr, "_", ".", -1)
-	app := appFromAddr(addr)
+	app := appFromAddr(parseAddr(d[1]))
 	doc := &document{
 		Client: "tsuru",
 		Metric: "response_time",
