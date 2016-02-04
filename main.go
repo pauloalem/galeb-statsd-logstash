@@ -2,17 +2,33 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
-	endpoint string
 	apps     map[string]string = map[string]string{}
+	endpoint string
+	token    string
 )
+
+const (
+	WaitTime = time.Second * 30
+)
+
+type App struct {
+	Name  string
+	Cname []string
+	Ip    string
+}
 
 type document struct {
 	Client string `json:"client"`
@@ -66,7 +82,37 @@ func handle(data []byte) (*document, error) {
 	return doc, nil
 }
 
+func loadApps() error {
+	client := &http.Client{}
+	appsURL := fmt.Sprintf("%v/apps", endpoint)
+	req, err := http.NewRequest("GET", appsURL, nil)
+	req.Header.Add("Authorization", fmt.Sprintf("b %s", token))
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	contents, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	var data []App
+	if err = json.Unmarshal(contents, &data); err != nil {
+		log.Fatal(err)
+		return err
+	}
+	for _, app := range data {
+		apps[app.Ip] = app.Name
+		for _, cname := range app.Cname {
+			apps[cname] = app.Name
+		}
+	}
+	return nil
+}
+
 func main() {
+	flag.StringVar(&endpoint, "e", "", "tsuru api endpoint")
+	flag.StringVar(&token, "t", "", "tsuru authorization token")
+	flag.Parse()
 	addr, err := net.ResolveUDPAddr("udp", ":8125")
 	if err != nil {
 		log.Fatal(err)
@@ -76,6 +122,20 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.Close()
+
+	err = loadApps()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ticker := time.NewTicker(WaitTime)
+	go func() {
+		for range ticker.C {
+			err = loadApps()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}()
 	for {
 		buf := make([]byte, 1600)
 		n, _, err := conn.ReadFromUDP(buf)
